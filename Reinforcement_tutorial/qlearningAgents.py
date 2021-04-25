@@ -5,7 +5,10 @@ from game import *
 from learningAgents import ReinforcementAgent
 from featureExtractors import *
 
-import random,util,math
+import random
+import util
+import math
+
 
 class QLearningAgent(ReinforcementAgent):
     """
@@ -19,14 +22,16 @@ class QLearningAgent(ReinforcementAgent):
         - self.alpha (learning rate)
         - self.discount (discount rate)
     """
+
     def __init__(self, **args):
         "Initialize Q-values"
         ReinforcementAgent.__init__(self, **args)
 
-        self.actions = {"north":0, "east":1, "south":2, "west":3, "exit":4}
+        self.actions = {"north": 0, "east": 1,
+                        "south": 2, "west": 3, "exit": 4}
         self.table_file = open("qtable.txt", "r+")
         self.q_table = self.readQtable()
-        self.epsilon = 1
+        self.epsilon = 0.05
 
     def readQtable(self):
         "Read qtable from disc"
@@ -53,8 +58,8 @@ class QLearningAgent(ReinforcementAgent):
         "Print qtable"
         for line in self.q_table:
             print(line)
-        print("\n")    
-            
+        print("\n")
+
     def __del__(self):
         "Destructor. Invokation at the end of each episode"
         self.writeQtable()
@@ -68,7 +73,6 @@ class QLearningAgent(ReinforcementAgent):
         return state[0]+state[1]*4
 
     def getQValue(self, state, action):
-
         """
           Returns Q(state,action)
           Should return 0.0 if we have never seen a state
@@ -79,7 +83,6 @@ class QLearningAgent(ReinforcementAgent):
 
         return self.q_table[position][action_column]
 
-
     def computeValueFromQValues(self, state):
         """
           Returns max_action Q(state,action)
@@ -88,8 +91,8 @@ class QLearningAgent(ReinforcementAgent):
           terminal state, you should return a value of 0.0.
         """
         legalActions = self.getLegalActions(state)
-        if len(legalActions)==0:
-          return 0
+        if len(legalActions) == 0:
+            return 0
         return max(self.q_table[self.computePosition(state)])
 
     def computeActionFromQValues(self, state):
@@ -99,8 +102,8 @@ class QLearningAgent(ReinforcementAgent):
           you should return None.
         """
         legalActions = self.getLegalActions(state)
-        if len(legalActions)==0:
-          return None
+        if len(legalActions) == 0:
+            return None
 
         best_actions = [legalActions[0]]
         best_value = self.getQValue(state, legalActions[0])
@@ -128,14 +131,13 @@ class QLearningAgent(ReinforcementAgent):
         action = None
 
         if len(legalActions) == 0:
-             return action
+            return action
 
         flip = util.flipCoin(self.epsilon)
 
         if flip:
             return random.choice(legalActions)
         return self.getPolicy(state)
-
 
     def update(self, state, action, nextState, reward):
         """
@@ -156,15 +158,34 @@ class QLearningAgent(ReinforcementAgent):
 
         """
         # TRACE for transition and position to update. Comment the following lines if you do not want to see that trace
-        print("Update Q-table with transition: ", state, action, nextState, reward)
+        print("Update Q-table with transition: ",
+              state, action, nextState, reward)
         position = self.computePosition(state)
         action_column = self.actions[action]
-    
+
         print("Corresponding Q-table cell to update:", position, action_column)
         position = self.computePosition(state)
-        
-        
+
+        goodTerminal = (3, 2)
+        badTerminal = (3, 1)
+        distanceActual = 0
+        distanceNext = 0
+
+        distanceActualX = goodTerminal[0] - state[0]
+        distanceActualY = goodTerminal[1] - state[1]
+        distanceActual = distanceActualX + distanceActualY
+        if(nextState != "TERMINAL_STATE"):
+            distanceNextX = goodTerminal[0] - nextState[0]
+            distanceNextY = goodTerminal[1] - nextState[1]
+            distanceNext = distanceNextX + distanceNextY
+
         "*** YOUR CODE HERE ***"
+        if (distanceNext < distanceActual and nextState != badTerminal and reward != -1) or reward == 1:
+            self.q_table[position][action_column] = 1
+        elif nextState == badTerminal or reward == -1 or nextState == state:
+            self.q_table[position][action_column] = -1
+        else:
+            self.q_table[position][action_column] = 0
 
         # TRACE for updated q-table. Comment the following lines if you do not want to see that trace
         print("Q-table:")
@@ -178,10 +199,11 @@ class QLearningAgent(ReinforcementAgent):
         "Return the highest q value for a given state"
         return self.computeValueFromQValues(state)
 
+
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
 
-    def __init__(self, epsilon=0.05,gamma=0.8,alpha=0.2, numTraining=0, **args):
+    def __init__(self, epsilon=0.05, gamma=0.8, alpha=0.2, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -205,8 +227,8 @@ class PacmanQAgent(QLearningAgent):
         informs parent of action for Pacman.  Do not change or remove this
         method.
         """
-        action = QLearningAgent.getAction(self,state)
-        self.doAction(state,action)
+        action = QLearningAgent.getAction(self, state)
+        self.doAction(state, action)
         return action
 
 
@@ -218,6 +240,7 @@ class ApproximateQAgent(PacmanQAgent):
        and update.  All other QLearningAgent functions
        should work as is.
     """
+
     def __init__(self, extractor='IdentityExtractor', **args):
         self.featExtractor = util.lookup(extractor, globals())()
         PacmanQAgent.__init__(self, **args)
@@ -242,7 +265,8 @@ class ApproximateQAgent(PacmanQAgent):
 
         feats = self.featExtractor.getFeatures(state, action)
         for f in feats:
-          self.weights[f] = self.weights[f] + self.alpha * feats[f]*((reward + self.discount * self.computeValueFromQValues(nextState)) - self.getQValue(state, action))
+            self.weights[f] = self.weights[f] + self.alpha * feats[f]*(
+                (reward + self.discount * self.computeValueFromQValues(nextState)) - self.getQValue(state, action))
 
         # util.raiseNotDefined()
 
