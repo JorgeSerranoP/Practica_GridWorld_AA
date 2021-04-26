@@ -166,26 +166,15 @@ class QLearningAgent(ReinforcementAgent):
         print("Corresponding Q-table cell to update:", position, action_column)
         position = self.computePosition(state)
 
-        goodTerminal = (3, 2)
-        badTerminal = (3, 1)
-        distanceActual = 0
-        distanceNext = 0
-
-        distanceActualX = goodTerminal[0] - state[0]
-        distanceActualY = goodTerminal[1] - state[1]
-        distanceActual = distanceActualX + distanceActualY
-        if(nextState != "TERMINAL_STATE"):
-            distanceNextX = goodTerminal[0] - nextState[0]
-            distanceNextY = goodTerminal[1] - nextState[1]
-            distanceNext = distanceNextX + distanceNextY
-
-        "*** YOUR CODE HERE ***"
-        if (distanceNext < distanceActual and nextState != badTerminal and reward != -1) or reward == 1:
-            self.q_table[position][action_column] = 1
-        elif nextState == badTerminal or reward == -1 or nextState == state:
-            self.q_table[position][action_column] = -1
+        if(reward == 1 or reward == -1):
+            self.q_table[position][action_column] = (
+                1-self.alpha)*self.q_table[position][action_column] + self.alpha*(reward + 0)
         else:
-            self.q_table[position][action_column] = 0
+            positionNext = self.computePosition(nextState)
+            actionNext = self.computeActionFromQValues(nextState)
+            action_column_next = self.actions[actionNext]
+            self.q_table[position][action_column] = (
+                1-self.alpha)*self.q_table[position][action_column] + self.alpha*(reward + self.discount*self.q_table[positionNext][action_column_next])
 
         # TRACE for updated q-table. Comment the following lines if you do not want to see that trace
         print("Q-table:")
